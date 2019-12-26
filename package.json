@@ -1,0 +1,33 @@
+{
+    "name": "admin-project",
+    "version": "1.0.0",
+    "description": "",
+    "main": "app.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "dev:serve": "cross-env NODE_ENV=development webpack-dev-server --mode development --color --progress",
+        "dev:client": "cross-env NODE_ENV=development nodemon --watch \"app.js\" --exec \"electron .\"",
+        "dev": "npm run dev:serve && npm run dev:client"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "cross-env": "^6.0.3",
+        "css-loader": "^3.4.0",
+        "electron": "^7.1.7",
+        "html-webpack-plugin": "^3.2.0",
+        "nodemon": "^2.0.2",
+        "sass": "^1.24.0",
+        "sass-loader": "^8.0.0",
+        "vue-loader": "^15.8.3",
+        "vue-style-loader": "^4.1.2",
+        "vue-template-compiler": "^2.6.11",
+        "webpack": "^4.41.4",
+        "webpack-cli": "^3.3.10",
+        "webpack-dev-server": "^3.10.1"
+    },
+    "dependencies": {
+        "vue": "^2.6.11"
+    }
+}
