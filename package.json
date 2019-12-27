@@ -7,12 +7,13 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "dev:serve": "cross-env NODE_ENV=development webpack-dev-server --mode development --color --progress",
         "dev:client": "cross-env NODE_ENV=development nodemon --watch \"app.js\" --exec \"electron .\"",
-        "dev": "npm run dev:serve && npm run dev:client"
+        "dev": "concurrently \"npm run dev:serve\" \"npm run dev:client\""
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "devDependencies": {
+        "concurrently": "^5.0.2",
         "cross-env": "^6.0.3",
         "css-loader": "^3.4.0",
         "electron": "^7.1.7",
@@ -28,6 +29,7 @@
         "webpack-dev-server": "^3.10.1"
     },
     "dependencies": {
+        "adm-zip": "^0.4.13",
         "vue": "^2.6.11"
     }
 }
