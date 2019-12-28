@@ -3,6 +3,8 @@ const webpack = require('webpack')
 const { VueLoaderPlugin } = require('vue-loader')
 const HtmlPlugin = require('html-webpack-plugin')
 
+const { port } = require('./configs/server')
+
 const isDev = process.env.NODE_ENV === 'development'
 
 module.exports = {
@@ -33,7 +35,7 @@ module.exports = {
     },
     devServer: {
         host: '0.0.0.0',
-        port: 3000,
+        port,
         hot: true,
         overlay: true,
         historyApiFallback: true

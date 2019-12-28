@@ -5,6 +5,10 @@ export default window.isBrowser ? {
         eOpenPage (url) {
             window.open(url, '_blank')
         },
+        eClosePage () {
+            // 浏览器环境无解
+            return Promise.reject('not at electron environment!')
+        },
         eLoadPage (url) {
             window.open(url, '_self')
         },
@@ -41,6 +45,9 @@ export default window.isBrowser ? {
     methods: {
         eOpenPage (url) {
             window.ipcRenderer.send('bridge', { control: 'open-page', option: { url } })
+        },
+        eClosePage () {
+            window.ipcRenderer.send('bridge', { control: 'close-page' })
         },
         eLoadPage (url) {
             window.ipcRenderer.send('bridge', { control: 'load-page', option: { url } })
