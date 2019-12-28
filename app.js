@@ -96,11 +96,8 @@ function createWin (option = {}) {
         option.y = option.y + externalDisplay.bounds.y
     }
 
-    let maxSize = false
-    if (option.maxSize) {
-        maxSize = option.maxSize
-        delete option.maxSize
-    }
+    maxSize = option.maxSize || false
+    delete option.maxSize
 
     const win = new BrowserWindow(Object.assign({}, {
         fullscreen: false,
