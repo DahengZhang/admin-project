@@ -1,3 +1,5 @@
+import { filters } from '../../configs/electron'
+
 export default window.isBrowser ? {
     methods: {
         eOpenPage (url) {
@@ -6,11 +8,31 @@ export default window.isBrowser ? {
         eLoadPage (url) {
             window.open(url, '_self')
         },
+        eSelectFolder () {
+            // 可以用 input type=file 代替
+            return Promise.reject('not at electron environment!')
+        },
+        eSelectFolders () {
+            // 可以用 input type=file 代替
+            return Promise.reject('not at electron environment!')
+        },
         eSelectFile () {
             // 可以用 input type=file 代替
             return Promise.reject('not at electron environment!')
         },
+        eSelectFiles () {
+            // 可以用 input type=file 代替
+            return Promise.reject('not at electron environment!')
+        },
         eZipFile () {
+            // 浏览器环境无解
+            return Promise.reject('not at electron environment!')
+        },
+        eDownload (url) {
+            // 可以用打开页面模拟
+            return Promise.reject('not at electron environment!')
+        },
+        eOpenFile (url) {
             // 浏览器环境无解
             return Promise.reject('not at electron environment!')
         }
@@ -23,36 +45,36 @@ export default window.isBrowser ? {
         eLoadPage (url) {
             window.ipcRenderer.send('bridge', { control: 'load-page', option: { url } })
         },
-        eSelectFolder () {
+        eSelectFolder (option={}) {
             // 选择单个文件加
-            ipcRenderer.send('bridge', { control: 'select-file', option: { properties: ['openDirectory'] } })
+            ipcRenderer.send('bridge', { control: 'select-file', option: { properties: ['openDirectory'], ...filters(option) } })
             return new Promise((resolve, reject) => {
                 ipcRenderer.on('select-file', (_, a) => {
                     !a ? reject('取消选择') : resolve(a[0])
                 })
             })
         },
-        eSelectFolders () {
+        eSelectFolders (option={}) {
             // 选择多个文件加
-            ipcRenderer.send('bridge', { control: 'select-file', option: { properties: ['openDirectory', 'multiSelections'] } })
+            ipcRenderer.send('bridge', { control: 'select-file', option: { properties: ['openDirectory', 'multiSelections'], ...filters(option) } })
             return new Promise((resolve, reject) => {
                 ipcRenderer.on('select-file', (_, a) => {
                     !a ? reject('取消选择') : resolve(a)
                 })
             })
         },
-        eSelectFile () {
+        eSelectFile (option={}) {
             // 选择单个文件
-            ipcRenderer.send('bridge', { control: 'select-file', option: { properties: ['openFile'] } })
+            ipcRenderer.send('bridge', { control: 'select-file', option: { properties: ['openFile'], ...filters(option) } })
             return new Promise((resolve, reject) => {
                 ipcRenderer.on('select-file', (_, a) => {
                     !a ? reject('取消选择') : resolve(a[0])
                 })
             })
         },
-        eSelectFiles () {
+        eSelectFiles (option={}) {
             // 选择多个文件
-            ipcRenderer.send('bridge', { control: 'select-file', option: { properties: ['openFile', 'multiSelections'] } })
+            ipcRenderer.send('bridge', { control: 'select-file', option: { properties: ['openFile', 'multiSelections'], ...filters(option) } })
             return new Promise((resolve, reject) => {
                 ipcRenderer.on('select-file', (_, a) => {
                     !a ? reject('取消选择') : resolve(a)
@@ -60,6 +82,7 @@ export default window.isBrowser ? {
             })
         },
         eZipFile (targetPath, origins, filename) {
+            // 压缩文件
             window.ipcRenderer.send('bridge', { control: 'zip-file', option: {
                 targetPath, origins, filename
             } })
@@ -68,6 +91,18 @@ export default window.isBrowser ? {
                     !a ? reject('压缩失败') : resolve(a)
                 })
             })
+        },
+        eDownload (url, filename) {
+            // 下载文件
+            ipcRenderer.send('bridge', { control: 'download-url', option: { url, filename } })
+            return new Promise((resolve, reject) => {
+                ipcRenderer.on('download-url', (_, a) => {
+                    !a ? reject('下载失败') : resolve(a)
+                })
+            })
+        },
+        eOpenFile (localPath) {
+            ipcRenderer.send('bridge', { control: 'open-file', option: { localPath } })
         }
     }
 }

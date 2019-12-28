@@ -1,10 +1,13 @@
 <template>
     <div class="app">
+        <button @click="downloadFile()">下载</button>
         <button @click="eOpenPage('http://www.baidu.com')">打开新页面</button>
         <button @click="eLoadPage('http://www.baidu.com')">跳转页面</button>
         <button @click="selectFile(0)">选择文件</button>
+        <button @click="selectPPT()">选择PPT</button>
         <button @click="selectFile(1)">选择文件夹</button>
-        <button @click="zipFile()">压缩文件{{isZip}}</button>
+        <button @click="zipFile()">压缩文件</button>
+        <button @click="openFile()">打开文件</button>
         <br />
         selectedFiles:
         <ul>
@@ -18,8 +21,7 @@ export default {
     name: 'App',
     data () {
         return {
-            selectedFiles: [],
-            isZip: ''
+            selectedFiles: []
         }
     },
     methods: {
@@ -31,11 +33,34 @@ export default {
                 console.error(error)
             }
         },
+        async selectPPT () {
+            try {
+                const res = await this.eSelectFile({ filters: 'ppt' })
+                console.log(res)
+            } catch (error) {
+                console.error(error)
+            }
+        },
         async zipFile () {
             try {
                 const targetPath = await this.eSelectFolder()
                 const zipResult = await this.eZipFile(targetPath, this.selectedFiles)
                 console.log(zipResult)
+            } catch (error) {
+                console.error(error)
+            }
+        },
+        async downloadFile () {
+            try {
+                const res = await this.eDownload('http://192.168.1.110:8092/feifanScore/nologin/export?desc=true&examRoom=93ba0f3a1e8144a0bff1f531bb2145f3&projectId=456d61a6c80d4ab78bf2d57cc2d52456&type=1')
+                console.log('下载完成', res)
+            } catch (error) {
+                console.error(error)
+            }
+        },
+        async openFile () {
+            try {
+                this.eOpenFile(await this.eSelectFile())
             } catch (error) {
                 console.error(error)
             }
