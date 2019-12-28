@@ -99,6 +99,7 @@ function createWin (option = {}) {
     let maxSize = false
     if (option.maxSize) {
         maxSize = option.maxSize
+        delete option.maxSize
     }
 
     const win = new BrowserWindow(Object.assign({}, {
