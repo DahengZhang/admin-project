@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import App from './App.vue'
-import electron from './plugin/electron'
+import electron from 'src/plugin/electron'
 
 Vue.mixin(electron)
 

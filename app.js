@@ -9,9 +9,9 @@ const Koa = require('koa')
 const static = require('koa-static')
 const { app, BrowserWindow, Menu, screen, ipcMain, dialog, shell } = require('electron')
 
-const localTmpPath = path.join(os.tmpdir(), 'dist.zip') // 本地临时文件
-const localDistPath = path.join(os.homedir(), 'AppData/Roaming/xzff') // 网站资源存放目录
-const logFilePath = path.join(os.homedir(), 'AppData/Roaming/xzff/log.txt') // 日志文件目录
+const localTmpPath = path.join(os.tmpdir(), `${createUUID}.zip`) // 本地临时文件
+const localDistPath = path.join(os.homedir(), '.xzff') // 网站资源存放目录
+const logFilePath = path.join(os.homedir(), '.xzff', 'log.txt') // 日志文件目录
 
 const isDev = process.env.NODE_ENV === 'development'
 let { port } = require('./configs/server')
@@ -34,16 +34,23 @@ ipcMain.on('bridge', (e, a) => {
 })
 
 app.on('ready', async _ => {
-    if (!isDev) {
+    if (!isDev) { // 如果是开发环境，跳过加压服务过程，直接使用本地启动的开发服务器
         fs.mkdirSync(localDistPath, { recursive: true })
-        try {
-            const res = await toDownload('https://dldir1.qq.com/qqfile/qq/TIM2.3.2/21173/TIM2.3.2.21173.ee', localTmpPath)
-            await unZipFile(res, localDistPath)
-        } catch (error) {
-            // 解压自带的包
-            fs.copyFileSync(path.join(__dirname, 'package', 'dist.zip'), localTmpPath)
-            await unZipFile(localTmpPath, localDistPath)
-        }
+        /**
+         * 本地没有版本管理服务器
+         */
+        // try {
+        //     const res = await toDownload('https://dldir1.qq.com/qqfile/qq/TIM2.3.2/21173/TIM2.3.2.21173.ee', localTmpPath)
+        //     await unZipFile(res, localDistPath)
+        // } catch (error) {
+        //     // 解压自带的包
+        //     fs.copyFileSync(path.join(__dirname, 'package', 'dist.zip'), localTmpPath)
+        //     await unZipFile(localTmpPath, localDistPath)
+        // }
+
+        // 直接使用使用本地资源
+        fs.copyFileSync(path.join(__dirname, 'package', 'dist.zip'), localTmpPath)
+        await unZipFile(localTmpPath, localDistPath)
 
         // 获取可用端口
         port = await checkPort(10000)
@@ -57,13 +64,13 @@ app.on('ready', async _ => {
     Menu.setApplicationMenu(null)
 
     const win = createWin({
-        otherScreen: true,
+        otherScreen: false,
         fullscreen: false,
-        maxSize: true
+        maxSize: false
     })
 
     win.webContents.openDevTools()
-    win.loadURL(`http://localhost:${port}/login.html`)
+    win.loadURL(`http://127.0.0.1:${port}/login`)
 
 })
 
@@ -144,8 +151,8 @@ function closePage (event) {
 }
 
 // 重新加载页面
-function loadPage (event, option) {
-    event.sender.loadURL(option.url)
+function loadPage (event, option={}) {
+    event.sender.loadURL(/http/.test(option.url) ? option.url : `http://127.0.0.1:${port}${!/\//.test(option.url) && '/' || ''}${option.url}`)
 }
 
 // 打开文件
@@ -214,4 +221,13 @@ function log (content) {
     isDev
         ? console.log(content)
         : fs.appendFileSync(logFilePath, `${moment().format('YYYY/MM/DD HH:mm:ss')} ${content}\n`)
+}
+
+// 生成uuid
+function createUUID () {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        const r = Math.random() * 16 | 0,
+            v = c == 'x' ? r : (r & 0x3 | 0x8)
+        return v.toString(16)
+    })
 }

@@ -2,7 +2,7 @@
     <div class="app">
         <button @click="downloadFile()">下载</button>
         <button @click="eOpenPage('http://www.baidu.com')">打开新页面</button>
-        <button @click="eLoadPage('http://www.baidu.com')">跳转页面</button>
+        <button @click="eLoadPage('pack')">跳转页面</button>
         <button @click="selectFile(0)">选择文件</button>
         <button @click="selectPPT()">选择PPT</button>
         <button @click="selectFile(1)">选择文件夹</button>
@@ -68,3 +68,7 @@ export default {
     }
 }
 </script>
+
+<style lang="scss">
+.app {}
+</style>

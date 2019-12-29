@@ -1,0 +1,1 @@
+try{window.ipcRenderer=require("electron").ipcRenderer}catch(e){window.isBrowser=!0,console.warn("not at electron environment!")}
