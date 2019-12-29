@@ -1,8 +1,8 @@
 <template>
     <div class="app">
         <button @click="downloadFile()">下载</button>
-        <button @click="eOpenPage('http://www.baidu.com')">打开新页面</button>
-        <button @click="eLoadPage('pack')">跳转页面</button>
+        <button @click="openPage('http://www.baidu.com')">打开新页面</button>
+        <button @click="loadPage('pack')">跳转页面</button>
         <button @click="selectFile(0)">选择文件</button>
         <button @click="selectPPT()">选择PPT</button>
         <button @click="selectFile(1)">选择文件夹</button>
@@ -25,6 +25,12 @@ export default {
         }
     },
     methods: {
+        openPage (target) {
+            this.eOpenPage(target)
+        },
+        loadPage (target) {
+            this.eLoadPage(target)
+        },
         async selectFile (isDirectory) {
             try {
                 const targetPath = isDirectory ? await this.eSelectFolders() : await this.eSelectFiles()

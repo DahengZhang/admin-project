@@ -9,7 +9,7 @@ const Koa = require('koa')
 const static = require('koa-static')
 const { app, BrowserWindow, Menu, screen, ipcMain, dialog, shell } = require('electron')
 
-const localTmpPath = path.join(os.tmpdir(), `${createUUID}.zip`) // 本地临时文件
+const localTmpPath = path.join(os.tmpdir(), `${createUUID()}.zip`) // 本地临时文件
 const localDistPath = path.join(os.homedir(), '.xzff') // 网站资源存放目录
 const logFilePath = path.join(os.homedir(), '.xzff', 'log.txt') // 日志文件目录
 
@@ -35,7 +35,9 @@ ipcMain.on('bridge', (e, a) => {
 })
 
 app.on('ready', async _ => {
+    log('当前开发环境'+isDev)
     if (!isDev) { // 如果是开发环境，跳过加压服务过程，直接使用本地启动的开发服务器
+        log('开始创建本地文件夹')
         fs.mkdirSync(localDistPath, { recursive: true })
         /**
          * 本地没有版本管理服务器
@@ -50,20 +52,38 @@ app.on('ready', async _ => {
         // }
 
         // 直接使用使用本地资源
-        fs.copyFileSync(path.join(__dirname, 'package', 'dist.zip'), localTmpPath)
-        await unZipFile(localTmpPath, localDistPath)
+        try {
+            log('开始解压本地资源')
+            fs.copyFileSync(path.join(__dirname, 'package', 'dist.zip'), localTmpPath)
+            await unZipFile(localTmpPath, localDistPath)
+            log('本地资源解压完成')
+        } catch (error) {
+            log(`本地资源解压失败${error}`)
+        }
 
         // 获取可用端口
-        port = await checkPort(10000)
+        port = await checkPort(port)
+
         // 启动服务器
         const serve = new Koa()
         serve.use(static(localDistPath))
-        serve.listen(port, _ => console.log(`serve is running at ${port}...`))
+        serve.use(async ctx => {
+            const filename = ctx.request.url.match(/\/(\S*)\/?/) && ctx.request.url.match(/\/(\S*)\/?/)[1] || 'login'
+            ctx.type = 'text/html;charset=utf-8'
+            try {
+                ctx.body = fs.readFileSync(path.join(localDistPath, `${filename}.html`))
+            } catch (error) {
+                ctx.body = 'fail no file!'
+            }
+        })
+        log(`正在启动服务器在${port}端口`)
+        serve.listen(port, e => e ? log(e) : log(`serve is running at ${port}...`))
     }
 
     // 隐藏菜单
     Menu.setApplicationMenu(null)
 
+    log('创建兑换窗口')
     const win = createWin({
         otherScreen: false,
         fullscreen: false,
@@ -142,6 +162,7 @@ function selectFile (event, option) {
 // 用新窗口打开页面
 function openPage (_, option) {
     const url = option.url || ''
+    log(`准备打开页面${url}`)
     const win = createWin(option)
     win.loadURL(url)
 }
@@ -153,11 +174,13 @@ function closePage (event) {
 
 // 重新加载页面
 function loadPage (event, option={}) {
+    log(`准备打开页面${option.url}`)
     event.sender.loadURL(/http/.test(option.url) ? option.url : `http://127.0.0.1:${port}${!/\//.test(option.url) && '/' || ''}${option.url}`)
 }
 
 // 打开文件
 function openFile (_, { localPath }) {
+    log(`准备打开文件${localPath}`)
     localPath && shell.openItem(localPath)
 }
 
@@ -172,7 +195,7 @@ function readDir (event, { folderPath=path.join(__dirname, 'dist') }) {
 }
 
 // 压缩文件
-function zipFile (event, { targetPath, origins, filename='dist.zip' }) {
+function zipFile (event, { origins, targetPath=path.join(__dirname, 'package'), filename='dist.zip' }) {
     const zip = new AdmZip()
     origins.forEach(item => {
         fs.lstatSync(item).isDirectory() ? zip.addLocalFolder(item, path.basename(item)) : zip.addLocalFile(item)

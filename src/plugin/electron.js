@@ -54,6 +54,7 @@ export default window.isBrowser ? {
             window.ipcRenderer.send('bridge', { control: 'close-page' })
         },
         eLoadPage (url) {
+            console.log('重新加载页面')
             window.ipcRenderer.send('bridge', { control: 'load-page', option: { url } })
         },
         eSelectFolder (option={}) {
@@ -92,10 +93,10 @@ export default window.isBrowser ? {
                 })
             })
         },
-        eZipFile (targetPath, origins, filename) {
+        eZipFile (origins, targetPath, filename) {
             // 压缩文件
             window.ipcRenderer.send('bridge', { control: 'zip-file', option: {
-                targetPath, origins, filename
+                origins, targetPath, filename
             } })
             return new Promise((resolve, reject) => {
                 ipcRenderer.on('zip-file', (_, a) => {
