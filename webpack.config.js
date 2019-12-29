@@ -50,8 +50,14 @@ module.exports = {
             use: [
                 isDev ? 'vue-style-loader' : MiniCssExtractPlugin.loader,
                 'css-loader',
-                'sass-loader'
-                ]
+                'sass-loader',
+                {
+                    loader: 'sass-resources-loader',
+                    options: {
+                        resources: path.resolve(__dirname, 'src', 'assets', 'mixin.scss')
+                    }
+                }
+            ]
         }, {
             test: /\.(png|jpe?g|gif)$/,
             exclude: /node_modules/,

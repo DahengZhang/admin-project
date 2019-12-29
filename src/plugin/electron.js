@@ -39,6 +39,10 @@ export default window.isBrowser ? {
         eOpenFile (url) {
             // 浏览器环境无解
             return Promise.reject('not at electron environment!')
+        },
+        eReadFolder (url) {
+            // 浏览器环境无解
+            return Promise.reject('not at electron environment!')
         }
     }
 } : {
@@ -110,6 +114,14 @@ export default window.isBrowser ? {
         },
         eOpenFile (localPath) {
             ipcRenderer.send('bridge', { control: 'open-file', option: { localPath } })
+        },
+        eReadFolder (folderPath) {
+            ipcRenderer.send('bridge', { control: 'read-dir', option: { folderPath } })
+            return new Promise((resolve, reject) => {
+                ipcRenderer.on('read-dir', (_, a) => {
+                    !a ? reject('读取文件夹失败') : resolve(a)
+                })
+            })
         }
     }
 }

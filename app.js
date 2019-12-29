@@ -25,6 +25,7 @@ ipcMain.on('bridge', (e, a) => {
         case 'zip-file': zipFile(e, a.option); break;
         case 'open-file': openFile(e, a.option); break;
         case 'download-url': downloadUrl(e, a.option); break;
+        case 'read-dir': readDir(e, a.option); break;
         default:
             const wins = BrowserWindow.getAllWindows()
             wins.forEach(item => {
@@ -158,6 +159,16 @@ function loadPage (event, option={}) {
 // 打开文件
 function openFile (_, { localPath }) {
     localPath && shell.openItem(localPath)
+}
+
+// 读取文件夹列表
+function readDir (event, { folderPath=path.join(__dirname, 'dist') }) {
+    const res = fs.readdirSync(folderPath)
+    if (res) {
+        event.sender.send('read-dir', res.map(item => path.join(__dirname, 'dist', item)))
+    } else {
+        event.sender.send('read-dir', false)
+    }
 }
 
 // 压缩文件
