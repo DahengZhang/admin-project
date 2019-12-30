@@ -128,7 +128,12 @@ function checkPort (port) {
 function createWin (option = {}) {
     const externalDisplay = screen.getAllDisplays().find(item => {
         return item.bounds.x !== 0 || item.bounds.y !== 0
-    })
+    }) || {
+        bounds: {
+            x: 0,
+            y: 0
+        }
+    }
 
     if (option.otherScreen) {
         // 是否在副屏上打开
