@@ -29,16 +29,26 @@ ipcMain.on('bridge', (e, a) => {
         default:
             const wins = BrowserWindow.getAllWindows()
             wins.forEach(item => {
+                if (!a.includeMe && e.sender.sgin === item.webContents.sgin) {
+                    // 此消息不需要发送到自身
+                    return
+                }
                 item.webContents.send('bridge', a)
             })
     }
 })
 
 app.on('ready', async _ => {
-    log('当前开发环境'+isDev)
+    Menu.setApplicationMenu(Menu.buildFromTemplate([{
+        label: '创建打包文件',
+        click () {
+            openPage(null, { url: 'pack' })
+        }
+    }]))
     if (!isDev) { // 如果是开发环境，跳过加压服务过程，直接使用本地启动的开发服务器
-        log('开始创建本地文件夹')
         fs.mkdirSync(localDistPath, { recursive: true })
+        log('创建本地文件夹')
+        log('当前开发环境'+isDev)
         /**
          * 本地没有版本管理服务器
          */
@@ -59,6 +69,7 @@ app.on('ready', async _ => {
             log('本地资源解压完成')
         } catch (error) {
             log(`本地资源解压失败${error}`)
+            app.quit()
         }
 
         // 获取可用端口
@@ -78,20 +89,24 @@ app.on('ready', async _ => {
         })
         log(`正在启动服务器在${port}端口`)
         serve.listen(port, e => e ? log(e) : log(`serve is running at ${port}...`))
-    }
 
-    // 隐藏菜单
-    Menu.setApplicationMenu(null)
+        // 隐藏菜单
+        Menu.setApplicationMenu(null)
+    }
 
     log('创建兑换窗口')
     const win = createWin({
-        otherScreen: false,
+        otherScreen: isDev,
         fullscreen: false,
-        maxSize: false
+        maxSize: true
     })
 
-    win.webContents.openDevTools()
+    isDev && win.webContents.openDevTools()
     win.loadURL(`http://127.0.0.1:${port}/login`)
+
+    win.on('closed', _ => {
+        app.quit()
+    })
 
 })
 
@@ -124,8 +139,11 @@ function createWin (option = {}) {
         option.y = option.y + externalDisplay.bounds.y
     }
 
-    maxSize = option.maxSize || false
+    const maxSize = option.maxSize || false
     delete option.maxSize
+
+    const devTool = option.devTool || false
+    delete option.devTool
 
     const win = new BrowserWindow(Object.assign({}, {
         fullscreen: false,
@@ -135,7 +153,10 @@ function createWin (option = {}) {
         }
     }, option))
 
+    win.webContents.sgin = createUUID()
+
     maxSize && win.maximize()
+    devTool && win.webContents.openDevTools()
 
     win.once('ready-to-show', _ => {
         win.show()
@@ -160,16 +181,18 @@ function selectFile (event, option) {
 }
 
 // 用新窗口打开页面
-function openPage (_, option) {
+function openPage (_, option = {}) {
     const url = option.url || ''
+    delete option.url
     log(`准备打开页面${url}`)
     const win = createWin(option)
-    win.loadURL(url)
+    win.loadURL(/http/.test(url) ? url : `http://127.0.0.1:${port}${!/^\//.test(url) && '/' || ''}${url}`)
 }
 
 // 关闭窗口
 function closePage (event) {
-    event.close()
+    log('关闭窗口')
+    event.sender.destroy()
 }
 
 // 重新加载页面
