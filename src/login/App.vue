@@ -58,7 +58,10 @@ export default {
         },
         async downloadFile () {
             try {
-                const res = await this.eDownload('http://192.168.1.110:8092/feifanScore/nologin/export?desc=true&examRoom=93ba0f3a1e8144a0bff1f531bb2145f3&projectId=456d61a6c80d4ab78bf2d57cc2d52456&type=1')
+                // http://192.168.0.106:8092/feifanScore/nologin/export?desc=true&examRoom=93ba0f3a1e8144a0bff1f531bb2145f3&projectId=456d61a6c80d4ab78bf2d57cc2d52456&type=1
+                // http://192.168.0.106:8092/feifanScore/nologin/export?projectId=456d61a6c80d4ab78bf2d57cc2d52456&examRoom=93ba0f3a1e8144a0bff1f531bb2145f3&type=1&desc=true
+                // http://192.168.0.112:8081/feifanScore/nologin/export?projectId=456d61a6c80d4ab78bf2d57cc2d52456&examRoom=93ba0f3a1e8144a0bff1f531bb2145f3&type=1&desc=true
+                const res = await this.eDownload('http://192.168.0.106:8092/feifanScore/nologin/export?projectId=456d61a6c80d4ab78bf2d57cc2d52456&examRoom=93ba0f3a1e8144a0bff1f531bb2145f3&type=1&desc=true')
                 console.log('下载完成', res)
             } catch (error) {
                 console.error(error)

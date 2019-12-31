@@ -32,7 +32,7 @@ module.exports = {
         extensions: ['.js', '.vue'],
         alias: {
             'root': path.resolve(__dirname),
-            'src': path.resolve(__dirname, 'src/')
+            'src': path.resolve(__dirname, 'src')
         }
     },
     module: {

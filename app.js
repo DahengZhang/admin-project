@@ -9,12 +9,14 @@ const Koa = require('koa')
 const static = require('koa-static')
 const { app, BrowserWindow, Menu, screen, ipcMain, dialog, shell } = require('electron')
 
-const localTmpPath = path.join(os.tmpdir(), `${createUUID()}.zip`) // 本地临时文件
 const localDistPath = path.join(os.homedir(), '.xzff') // 网站资源存放目录
+const localTmpPath = path.join(os.homedir(), '.xzff', 'dist.zip') // 本地临时文件
 const logFilePath = path.join(os.homedir(), '.xzff', 'log.txt') // 日志文件目录
 
 const isDev = process.env.NODE_ENV === 'development'
 let { port } = require('./configs/server')
+const proxy = require('./configs/proxy')
+const openDevTool = true
 
 ipcMain.on('bridge', (e, a) => {
     switch (a.control) {
@@ -46,8 +48,10 @@ app.on('ready', async _ => {
     }]))
     if (!isDev) { // 如果是开发环境，跳过加压服务过程，直接使用本地启动的开发服务器
         fs.mkdirSync(localDistPath, { recursive: true })
+        log('=============================================')
         log('创建本地文件夹')
         log('当前开发环境'+isDev)
+
         /**
          * 没有版本管理服务器
          */
@@ -63,6 +67,8 @@ app.on('ready', async _ => {
         // 直接使用使用本地资源
         try {
             log('开始解压本地资源')
+            // 文件不存在时使用包自带文件
+            // !probe() && fs.copyFileSync(path.join(__dirname, 'package', 'dist.zip'), localTmpPath)
             fs.copyFileSync(path.join(__dirname, 'package', 'dist.zip'), localTmpPath)
             await unZipFile(localTmpPath, localDistPath)
             log('本地资源解压完成')
@@ -95,20 +101,30 @@ app.on('ready', async _ => {
 
     log('创建基础窗口')
     const win = createWin({
-        otherScreen: isDev,
+        otherScreen: false,
         fullscreen: false,
         maxSize: true,
         alwaysTop: false
     })
 
-    isDev && win.webContents.openDevTools()
-    win.loadURL(`http://127.0.0.1:${port}/login.html`)
+    win.loadURL(`http://127.0.0.1:${port}/login`)
 
     win.on('closed', _ => {
         app.quit()
     })
 
 })
+
+// 判断文件或者文件夹是否存在
+function probe (filePath) {
+    try {
+        fs.accessSync(filePath)
+        return true
+    } catch (error) {
+        log(filePath + '文件不存在')
+        return false
+    }
+}
 
 // 获取可用端口
 function checkPort (port) {
@@ -132,6 +148,10 @@ function createWin (option = {}) {
         bounds: {
             x: 0,
             y: 0
+        },
+        workArea: {
+            width: screen.getPrimaryDisplay().workAreaSize.width,
+            height: screen.getPrimaryDisplay().workAreaSize.height
         }
     }
 
@@ -144,17 +164,23 @@ function createWin (option = {}) {
         option.y = option.y + externalDisplay.bounds.y
     }
 
+    option.right !== undefined && (option.x = option.x + externalDisplay.workArea.width - option.right - (option.width || 0))
+    delete option.right
+
     const sgin = option.sgin || createUUID()
     delete option.sgin
 
     const maxSize = option.maxSize || false
     delete option.maxSize
 
-    const devTool = option.devTool || false
+    const devTool = option.devTool !== undefined ? option.devTool : isDev && openDevTool
     delete option.devTool
 
     const alwaysTop = option.alwaysTop || false
     delete option.alwaysTop
+
+    const blurWin = option.blurWin || false
+    delete option.blurWin
 
     const win = new BrowserWindow(Object.assign({}, {
         fullscreen: false,
@@ -171,7 +197,7 @@ function createWin (option = {}) {
     alwaysTop && win.setAlwaysOnTop(true)
 
     win.once('ready-to-show', _ => {
-        win.show()
+        blurWin ? win.showInactive() : win.show()
     })
     return win
 }
@@ -203,12 +229,20 @@ function openPage (_, option = {}) {
 
 // 关闭窗口
 function closePage (event, option='') {
-    log('关闭窗口'+option)
-    let target = BrowserWindow.getAllWindows().find(item => item.webContents.sgin === option) || null
-    if (target && !option) {
-        target = event.sender
+    if (option) {
+        log('关闭窗口'+option)
+        let target = BrowserWindow.getAllWindows().find(item => item.webContents.sgin === option) || null
+        target && target.destroy()
+    } else {
+        log('关闭当前窗口外所有窗口')
+        // 如果 option 为空，则关闭除触发窗口外所有窗口
+        BrowserWindow.getAllWindows().forEach(item => {
+            if (event.sender.sgin === item.webContents.sgin) {
+                return
+            }
+            item.destroy()
+        })
     }
-    target && target.destroy()
 }
 
 // 重新加载页面
@@ -262,17 +296,20 @@ function unZipFile (origin, target) {
 // 下载文件
 async function downloadUrl (event, { url, filename='tmp.xls' }) {
     try {
-        const savePath = dialog.showSaveDialogSync({ defaultPath: path.join(os.homedir(), 'Documents', filename) })
+        const savePath = dialog.showSaveDialogSync({ defaultPath: path.join(os.homedir(), 'Download', filename) })
         if (savePath) {
             event.sender.send('download-url', await toDownload(url, savePath))
+            log(url + '下载完成')
         }
     } catch (error) {
         event.sender.send('download-url', false)
+        log(url + '下载失败')
     }
 }
 
 // 下载方法
 function toDownload (url, savePath) {
+    !/^https?:\/\//.test(url) && (url = proxy + (/^\//.test(url) ? url : `/${url}`))
     return new Promise((resolve, reject) => {
         axios({
             url,
@@ -285,6 +322,7 @@ function toDownload (url, savePath) {
                 reject('save fail')
             })
         }).catch(_ => {
+            log('download fail')
             reject('download fail')
         })
     })

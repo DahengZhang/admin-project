@@ -54,11 +54,9 @@ const electron = {
         window.ipcRenderer.send('bridge', { control: 'open-page', option: { url, ...option } })
     },
     eClosePage (option) {
-        console.log('关闭页面')
         window.ipcRenderer.send('bridge', { control: 'close-page', option })
     },
     eLoadPage (url) {
-        console.log('重新加载页面')
         window.ipcRenderer.send('bridge', { control: 'load-page', option: { url } })
     },
     eSelectFolder (option={}) {
@@ -129,16 +127,16 @@ const electron = {
         })
     },
     eMessage (option) {
-        ipcRenderer.send('bridge', { control: 'send-msg', option })
+        ipcRenderer.send('bridge', { ...option })
     },
     eOnMessage (e, a) {}
 }
 
 const methods = window.isBrowser ? browser : electron
-const mixin = {
+const mixin = window.isBrowser ? { methods } : {
     mounted () {
         ipcRenderer.on('bridge', (e, a) => {
-            this.eOnMessage(e, a.option)
+            this.eOnMessage(e, a)
         })
     },
     methods
