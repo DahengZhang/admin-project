@@ -27,8 +27,7 @@ ipcMain.on('bridge', (e, a) => {
         case 'download-url': downloadUrl(e, a.option); break;
         case 'read-dir': readDir(e, a.option); break;
         default:
-            const wins = BrowserWindow.getAllWindows()
-            wins.forEach(item => {
+            BrowserWindow.getAllWindows().forEach(item => {
                 if (!a.includeMe && e.sender.sgin === item.webContents.sgin) {
                     // 此消息不需要发送到自身
                     return
@@ -50,7 +49,7 @@ app.on('ready', async _ => {
         log('创建本地文件夹')
         log('当前开发环境'+isDev)
         /**
-         * 本地没有版本管理服务器
+         * 没有版本管理服务器
          */
         // try {
         //     const res = await toDownload('https://dldir1.qq.com/qqfile/qq/TIM2.3.2/21173/TIM2.3.2.21173.ee', localTmpPath)
@@ -79,7 +78,7 @@ app.on('ready', async _ => {
         const serve = new Koa()
         serve.use(static(localDistPath))
         serve.use(async ctx => {
-            const filename = ctx.request.url.match(/\/(\S*)\/?/) && ctx.request.url.match(/\/(\S*)\/?/)[1] || 'login'
+            const filename = ctx.request.url.match(/\/(\S*)(\/|.)?/) && ctx.request.url.match(/\/(\S*)(\/|.)?/)[1] || 'login'
             ctx.type = 'text/html;charset=utf-8'
             try {
                 ctx.body = fs.readFileSync(path.join(localDistPath, `${filename}.html`))
@@ -94,15 +93,16 @@ app.on('ready', async _ => {
         Menu.setApplicationMenu(null)
     }
 
-    log('创建兑换窗口')
+    log('创建基础窗口')
     const win = createWin({
         otherScreen: isDev,
         fullscreen: false,
-        maxSize: true
+        maxSize: true,
+        alwaysTop: false
     })
 
     isDev && win.webContents.openDevTools()
-    win.loadURL(`http://127.0.0.1:${port}/login`)
+    win.loadURL(`http://127.0.0.1:${port}/login.html`)
 
     win.on('closed', _ => {
         app.quit()
@@ -128,9 +128,14 @@ function checkPort (port) {
 function createWin (option = {}) {
     const externalDisplay = screen.getAllDisplays().find(item => {
         return item.bounds.x !== 0 || item.bounds.y !== 0
-    })
+    }) || {
+        bounds: {
+            x: 0,
+            y: 0
+        }
+    }
 
-    if (option.otherScreen && externalDisplay) {
+    if (option.otherScreen) {
         // 是否在副屏上打开
         delete option.otherScreen
         !option.x && (option.x = 0)
@@ -139,11 +144,17 @@ function createWin (option = {}) {
         option.y = option.y + externalDisplay.bounds.y
     }
 
+    const sgin = option.sgin || createUUID()
+    delete option.sgin
+
     const maxSize = option.maxSize || false
     delete option.maxSize
 
     const devTool = option.devTool || false
     delete option.devTool
+
+    const alwaysTop = option.alwaysTop || false
+    delete option.alwaysTop
 
     const win = new BrowserWindow(Object.assign({}, {
         fullscreen: false,
@@ -153,10 +164,11 @@ function createWin (option = {}) {
         }
     }, option))
 
-    win.webContents.sgin = createUUID()
+    win.webContents.sgin = sgin
 
     maxSize && win.maximize()
     devTool && win.webContents.openDevTools()
+    alwaysTop && win.setAlwaysOnTop(true)
 
     win.once('ready-to-show', _ => {
         win.show()
@@ -190,15 +202,19 @@ function openPage (_, option = {}) {
 }
 
 // 关闭窗口
-function closePage (event) {
-    log('关闭窗口')
-    event.sender.destroy()
+function closePage (event, option='') {
+    log('关闭窗口'+option)
+    let target = BrowserWindow.getAllWindows().find(item => item.webContents.sgin === option) || null
+    if (target && !option) {
+        target = event.sender
+    }
+    target && target.destroy()
 }
 
 // 重新加载页面
 function loadPage (event, option={}) {
-    log(`准备打开页面${option.url}`)
-    event.sender.loadURL(/http/.test(option.url) ? option.url : `http://127.0.0.1:${port}${!/\//.test(option.url) && '/' || ''}${option.url}`)
+    log(`准备加载页面${option.url}`)
+    event.sender.loadURL(/http/.test(option.url) ? option.url : `http://127.0.0.1:${port}${!/^\//.test(option.url) && '/' || ''}${option.url}`)
 }
 
 // 打开文件
@@ -223,6 +239,7 @@ function zipFile (event, { origins, targetPath=path.join(__dirname, 'package'), 
     origins.forEach(item => {
         fs.lstatSync(item).isDirectory() ? zip.addLocalFolder(item, path.basename(item)) : zip.addLocalFile(item)
     })
+    fs.mkdirSync(targetPath, { recursive: true })
     zip.writeZip(path.join(targetPath, filename), e => {
         if (e) {
             event.sender.send('zip-file', false)

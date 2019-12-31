@@ -1,8 +1,8 @@
 import Vue from 'vue'
 import App from './App.vue'
-import electron from 'src/plugin/electron'
+import { methods } from 'src/plugin/electron'
 
-Vue.mixin(electron)
+Vue.mixin(methods)
 
 new Vue({
     render: h => h(App)
