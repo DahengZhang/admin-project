@@ -9,7 +9,7 @@ const CleanCSS = require('clean-css')
 
 const { port } = require('./configs/server')
 const isDev = process.env.NODE_ENV === 'development'
-const publicPath = ''
+const publicPath = '/'
 
 module.exports = {
     devtool: isDev ? 'cheap-source-map' : 'source-maps',
@@ -32,7 +32,7 @@ module.exports = {
         extensions: ['.js', '.vue'],
         alias: {
             'root': path.resolve(__dirname),
-            'src': path.resolve(__dirname, 'src')
+            'src': path.resolve(__dirname, 'src/')
         }
     },
     module: {
@@ -76,10 +76,10 @@ module.exports = {
         overlay: true,
         historyApiFallback: {
             rewrites: [{
-                from: '^/pack',
+                from: /^\/pack/,
                 to: '/pack.html'
             }, {
-                from: '^/',
+                from: /^\//,
                 to: '/login.html'
             }]
         },

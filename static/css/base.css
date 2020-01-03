@@ -1,3 +1,95 @@
-html {
-    background-color: #ffffff;
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    border:none;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, .2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, .5);
+}
+
+.mouse.hand {
+    cursor: pointer;
+}
+.mouse.disable {
+    cursor: not-allowed;
+}
+.mouse.loading {
+    cursor: wait;
+}
+
+.vertical-middle::before {
+    content: "";
+    width: 0;
+    height: 100%;
+    display: inline-block;
+    vertical-align: middle;
+}
+.vertical-middle > * {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.one-line {
+    display: inline-block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bottom-line {
+    position: relative;
+}
+.bottom-line::after {
+    position: absolute;
+    content: "";
+    right: 0;
+    bottom: 0;
+    left: 5px;
+    height: 1px;
+    background-color: #999999;
+    transform: scaleY(.5);
+}
+.bottom-line.last-not:nth-last-of-type(1)::after {
+    display: none;
+}
+
+.text-heightlight:hover {
+    text-shadow: 0 0 2px rgba(255, 255, 255, 1);
+}
+.text-heightlight:active {
+    text-shadow: 0 0 1px rgba(255, 255, 255, 1);
+}
+.clear-float {
+    clear: both;
+}
+
+.mask-enter-active, .mask-leave-active {
+    transition: all .2s;
+}
+.mask-enter-active .panel, .mask-leave-active .panel {
+    transition: all .2s;
+}
+.mask-enter, .mask-leave-to {
+    opacity: 0;
+}
+.mask-enter .panel, .mask-leave-to .panel {
+    transform: translate3d(0, 100px, 0);
+}
+
+.justify-text {
+    display: inline-block;
+    width: 100%;
+    text-align: justify;
+}
+.justify-text::after {
+    display: inline-block;
+    width: 100%;
+    content: "";
+    height: 0;
 }

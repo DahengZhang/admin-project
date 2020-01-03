@@ -71,6 +71,14 @@ const deepCopy = (data) => {
     return dataTmp
 }
 
+const checkType = (obj) => {
+    let type = typeof obj;
+    if (type != "object") {
+        return type;
+    }
+    return Object.prototype.toString.call(obj).replace(/^\[object (\S+)\]$/, '$1');
+}
+
 export {
     formatNumber,
     formatWeek,
@@ -79,5 +87,6 @@ export {
     dataURLtoFile,
     getUrlParam,
     createUUID,
-    deepCopy
+    deepCopy,
+    checkType
 }

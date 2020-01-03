@@ -1,8 +1,10 @@
 import Vue from 'vue'
 import App from './App'
-import { mixin } from 'src/plugin/electron'
+import { mixin as storeMixin } from 'src/plugin/storage'
+import { mixin as funcMixin } from 'src/plugin/electron'
 
-Vue.mixin(mixin)
+Vue.mixin(storeMixin)
+Vue.mixin(funcMixin)
 
 new Vue({
     render: h => h(App)

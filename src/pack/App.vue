@@ -30,5 +30,9 @@ export default {
 </script>
 
 <style lang="scss">
-.page.pack {}
+.page.pack {
+    label {
+        display: block;
+    }
+}
 </style>

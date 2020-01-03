@@ -7,16 +7,22 @@ const AdmZip = require('adm-zip')
 const moment = require('moment')
 const Koa = require('koa')
 const static = require('koa-static')
-const { app, BrowserWindow, Menu, screen, ipcMain, dialog, shell } = require('electron')
+const { app, BrowserWindow, Menu, globalShortcut, screen, ipcMain, dialog, shell } = require('electron')
 
-const localDistPath = path.join(os.homedir(), '.xzff') // 网站资源存放目录
-const localTmpPath = path.join(os.homedir(), '.xzff', 'dist.zip') // 本地临时文件
-const logFilePath = path.join(os.homedir(), '.xzff', 'log.txt') // 日志文件目录
+let { ip, port } = require('./configs/server')
+const packageConf = require(path.join(__dirname, 'package.json'))
 
+const localDistPath = path.join(os.homedir(), `.${packageConf.name}`) // 网站资源存放目录
+const localTmpPath = path.join(os.homedir(), `.${packageConf.name}`, 'dist.zip') // 本地临时文件
+const logFilePath = path.join(os.homedir(), `.${packageConf.name}`, 'log.txt') // 日志文件目录
+const configFilePath = path.join(os.homedir(), `.${packageConf.name}`, 'config.txt') // 日志文件目录
 const isDev = process.env.NODE_ENV === 'development'
-let { port } = require('./configs/server')
-const proxy = require('./configs/proxy')
 const openDevTool = true
+
+global.projectName = packageConf.name
+
+// 从配置文件里拿取服务器 ip
+readConfigIp()
 
 ipcMain.on('bridge', (e, a) => {
     switch (a.control) {
@@ -39,6 +45,11 @@ ipcMain.on('bridge', (e, a) => {
     }
 })
 
+try {
+    // 删除session文件
+    fs.unlinkSync(path.join(os.homedir(), `.${packageConf.name}`, 'session'))
+} catch (error) {}
+
 app.on('ready', async _ => {
     Menu.setApplicationMenu(Menu.buildFromTemplate([{
         label: '创建打包文件',
@@ -46,11 +57,10 @@ app.on('ready', async _ => {
             openPage(null, { url: 'pack' })
         }
     }]))
+    fs.mkdirSync(localDistPath, { recursive: true })
+    log('=============================================')
+    log('当前开发环境'+isDev)
     if (!isDev) { // 如果是开发环境，跳过加压服务过程，直接使用本地启动的开发服务器
-        fs.mkdirSync(localDistPath, { recursive: true })
-        log('=============================================')
-        log('创建本地文件夹')
-        log('当前开发环境'+isDev)
 
         /**
          * 没有版本管理服务器
@@ -101,10 +111,13 @@ app.on('ready', async _ => {
 
     log('创建基础窗口')
     const win = createWin({
-        otherScreen: false,
+        otherScreen: true,
         fullscreen: false,
+        frame: true,
         maxSize: true,
-        alwaysTop: false
+        alwaysTop: false,
+        resizable: true,
+        devTool: true
     })
 
     win.loadURL(`http://127.0.0.1:${port}/login`)
@@ -113,7 +126,37 @@ app.on('ready', async _ => {
         app.quit()
     })
 
+    // globalShortcut.register('Control+Alt+X', () => {
+    //     readConfigIp()
+    // })
+
+    // log('Control+Alt+X register ' + globalShortcut.isRegistered('Control+Alt+X'))
+
 })
+
+app.on('will-quit', _ => {
+    // 注销所有快捷键
+    // globalShortcut.unregisterAll()
+    try {
+        // 删除本地 session
+        fs.unlinkSync(path.join(os.homedir(), `.${packageConf.name}`, 'session'))
+        log('delete session store success')
+    } catch (error) {
+        log('delete session store fail')
+    }
+})
+
+function readConfigIp () {
+    try {
+        if (isDev) {
+            // 如果是开发环境，直接使用配置写死的 ip 地址
+            throw new Error()
+        }
+        global.ip = fs.readFileSync(configFilePath, 'utf-8') || ip
+    } catch (error) {
+        global.ip = ip
+    }
+}
 
 // 判断文件或者文件夹是否存在
 function probe (filePath) {
@@ -142,30 +185,31 @@ function checkPort (port) {
 
 // 创建窗口
 function createWin (option = {}) {
+    const mainDisplay = screen.getPrimaryDisplay()
     const externalDisplay = screen.getAllDisplays().find(item => {
         return item.bounds.x !== 0 || item.bounds.y !== 0
-    }) || {
-        bounds: {
-            x: 0,
-            y: 0
-        },
-        workArea: {
-            width: screen.getPrimaryDisplay().workAreaSize.width,
-            height: screen.getPrimaryDisplay().workAreaSize.height
-        }
-    }
+    })
 
-    if (option.otherScreen) {
+    if (option.otherScreen && externalDisplay) {
         // 是否在副屏上打开
-        delete option.otherScreen
         !option.x && (option.x = 0)
         !option.y && (option.y = 0)
         option.x = option.x + externalDisplay.bounds.x
         option.y = option.y + externalDisplay.bounds.y
+    } else if (option.otherScreen && !externalDisplay) {
+        // 是否在副屏上打开
+        !option.x && (option.x = 0)
+        !option.y && (option.y = 0)
+        option.x = option.x + mainDisplay.bounds.x
+        option.y = option.y + mainDisplay.bounds.y
     }
 
-    option.right !== undefined && (option.x = option.x + externalDisplay.workArea.width - option.right - (option.width || 0))
+    option.right !== undefined && (
+        option.x = (option.x || 0) + (option.otherScreen ? externalDisplay.workArea.width : mainDisplay.workArea.width) - option.right - (option.width || 0),
+        !option.y && (option.y = 0)
+    )
     delete option.right
+    delete option.otherScreen
 
     const sgin = option.sgin || createUUID()
     delete option.sgin
@@ -183,7 +227,7 @@ function createWin (option = {}) {
     delete option.blurWin
 
     const win = new BrowserWindow(Object.assign({}, {
-        fullscreen: false,
+        frame: false,
         show: false,
         webPreferences: {
             nodeIntegration: true
@@ -309,7 +353,7 @@ async function downloadUrl (event, { url, filename='tmp.xls' }) {
 
 // 下载方法
 function toDownload (url, savePath) {
-    !/^https?:\/\//.test(url) && (url = proxy + (/^\//.test(url) ? url : `/${url}`))
+    !/^https?:\/\//.test(url) && (url = global.ip + (/^\//.test(url) ? url : `/${url}`))
     return new Promise((resolve, reject) => {
         axios({
             url,

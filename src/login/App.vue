@@ -1,5 +1,6 @@
 <template>
     <div class="app">
+        <button @click="localStore()">存储</button>
         <button @click="downloadFile()">下载</button>
         <button @click="openPage('http://www.baidu.com')">打开新页面</button>
         <button @click="loadPage('pack')">跳转页面</button>
@@ -8,6 +9,7 @@
         <button @click="selectFile(1)">选择文件夹</button>
         <button @click="zipFile()">压缩文件</button>
         <button @click="openFile()">打开文件</button>
+        <button @click="printServer()">查看server</button>
         <br />
         selectedFiles:
         <ul>
@@ -17,6 +19,8 @@
 </template>
 
 <script>
+import { getServerIp } from 'root/configs/server'
+
 export default {
     name: 'App',
     data () {
@@ -25,6 +29,19 @@ export default {
         }
     },
     methods: {
+        printServer () {
+            console.log(getServerIp())
+        },
+        localStore () {
+            this.eSetStore('name1', { name: 'sssss' })
+            // this.eSetStore('name', null)
+            // this.eSetStore('name', undefined)
+            // this.eSetStore('name', 'ssssss')
+            this.eSetStore('name2', ['as', 'af'], true)
+            // this.eRemoveStore('name')
+            console.log(this.eGetStore('name1'))
+            console.log(this.eGetStore('name2'))
+        },
         openPage (target) {
             this.eOpenPage(target)
         },

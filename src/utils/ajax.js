@@ -1,8 +1,10 @@
 import qs from 'qs'
 import axios from 'axios'
+import { getServerIp } from 'root/configs/server'
+import { methods as utils } from 'src/plugin/electron'
 
 const _instance = axios.create({
-    baseURL: process.env.NODE_ENV === 'development' ? '' : 'http://192.168.1.110:8092',
+    baseURL: process.env.NODE_ENV === 'development' ? '' : getServerIp(),
     // withCredentials: true // 默认值为 false，值为 true 时，跨域请求强制带 cookie
 })
 
@@ -11,7 +13,8 @@ _instance.interceptors.request.use(config => {
     const token = window.sessionStorage.getItem('token') || ''
     if (config.url.indexOf('sys/login') === -1 && config.url.indexOf('/nologin') === -1 && !token) {
         // 非登录页面检查本地是否有登录态
-        // window.location.href = '/'
+        utils.eClosePage()
+        utils.eLoadPage('login')
         return
     } else {
         try {
