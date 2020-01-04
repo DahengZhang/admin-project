@@ -7,7 +7,7 @@ const CopyPlugin = require('copy-webpack-plugin')
 const Uglify = require('uglify-es')
 const CleanCSS = require('clean-css')
 
-const { port } = require('./configs/server')
+const { ip, port } = require('./configs/server')
 const isDev = process.env.NODE_ENV === 'development'
 const publicPath = '/'
 
@@ -85,7 +85,7 @@ module.exports = {
         },
         proxy: {
             '/api': {
-                target: 'http://127.0.0.1:3000',
+                target: ip,
                 changeOrigin: true,
                 pathRewrite: {
                     '^/api': ''

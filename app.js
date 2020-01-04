@@ -21,9 +21,6 @@ const openDevTool = true
 
 global.projectName = packageConf.name
 
-// 从配置文件里拿取服务器 ip
-readConfigIp()
-
 ipcMain.on('bridge', (e, a) => {
     switch (a.control) {
         case 'select-file': selectFile(e, a.option); break;
@@ -60,6 +57,16 @@ app.on('ready', async _ => {
     fs.mkdirSync(localDistPath, { recursive: true })
     log('=============================================')
     log('当前开发环境'+isDev)
+
+    try {
+        !probe(configFilePath) && fs.copyFileSync(path.join(__dirname, 'package', 'config.txt'), configFilePath)
+    } catch (error) {
+        log('释放配置文件失败'+error)
+    }
+
+    // 从配置文件里拿取服务器 ip
+    readConfigIp()
+
     if (!isDev) { // 如果是开发环境，跳过加压服务过程，直接使用本地启动的开发服务器
 
         /**
@@ -126,17 +133,31 @@ app.on('ready', async _ => {
         app.quit()
     })
 
-    // globalShortcut.register('Control+Alt+X', () => {
-    //     readConfigIp()
-    // })
+    globalShortcut.register('Control+Alt+Z', () => {
+        if (!probe(configFilePath)) {
+            fs.writeFileSync(configFilePath, '')
+        }
+        shell.openItem(configFilePath)
+        // BrowserWindow.getAllWindows().forEach(item => {
+        //     item.webContents.send('config.ip')
+        //     ipcMain.on('config.ip', (_, a) => {
+        //         try {
+        //             fs.writeFileSync(configFilePath, a, 'utf-8')
+        //             log('写入成功'+a)
+        //         } catch (error) {
+        //             log('写入失败')
+        //         }
+        //     })
+        // })
+    })
 
-    // log('Control+Alt+X register ' + globalShortcut.isRegistered('Control+Alt+X'))
+    log('Control+Alt+Z register ' + globalShortcut.isRegistered('Control+Alt+Z'))
 
 })
 
 app.on('will-quit', _ => {
     // 注销所有快捷键
-    // globalShortcut.unregisterAll()
+    globalShortcut.unregisterAll()
     try {
         // 删除本地 session
         fs.unlinkSync(path.join(os.homedir(), `.${packageConf.name}`, 'session'))
@@ -148,10 +169,6 @@ app.on('will-quit', _ => {
 
 function readConfigIp () {
     try {
-        if (isDev) {
-            // 如果是开发环境，直接使用配置写死的 ip 地址
-            throw new Error()
-        }
         global.ip = fs.readFileSync(configFilePath, 'utf-8') || ip
     } catch (error) {
         global.ip = ip

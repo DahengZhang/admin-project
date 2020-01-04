@@ -4,8 +4,8 @@ import { getServerIp } from 'root/configs/server'
 import { methods as utils } from 'src/plugin/electron'
 
 const _instance = axios.create({
-    baseURL: process.env.NODE_ENV === 'development' ? '' : getServerIp(),
-    // withCredentials: true // 默认值为 false，值为 true 时，跨域请求强制带 cookie
+    // withCredentials: true, // 默认值为 false，值为 true 时，跨域请求强制带 cookie
+    baseURL: window.isBrowser ? '/' : getServerIp(), // 如果是浏览器就请求根路径
 })
 
 _instance.interceptors.request.use(config => {
